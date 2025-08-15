@@ -23,6 +23,7 @@ ENV PIP_NO_CACHE_DIR=1 \
 
 # Upgrade pip tooling inside the venv
 RUN python -m pip install --upgrade pip setuptools wheel
+RUN pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu128
 
 # Copy requirements and install dependencies
 COPY requirements.txt .

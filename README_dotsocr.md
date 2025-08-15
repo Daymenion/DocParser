@@ -1,5 +1,3 @@
-<div align="center">
-
 <h1 align="center">
 dots.ocr: Multilingual Document Layout Parsing in a Single Vision-Language Model
 </h1>
