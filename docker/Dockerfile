@@ -9,13 +9,24 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies for DotsOCR
-RUN pip3 install flash_attn==2.8.0.post2
-RUN pip3 install transformers==4.51.3
+###############################################
+# Python virtual environment and pip upgrades #
+###############################################
+# Create an isolated virtual environment to avoid conflicts with
+# preinstalled/distutils packages in the base image (e.g., blinker).
+RUN python3 -m venv /opt/venv
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_ROOT_USER_ACTION=ignore
+
+# Upgrade pip tooling inside the venv
+RUN python -m pip install --upgrade pip setuptools wheel
 
 # Copy requirements and install dependencies
 COPY requirements.txt .
-RUN pip3 install --force-reinstall -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Copy the entire project
 COPY . .

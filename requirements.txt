@@ -1,7 +1,6 @@
 # Web interfaces
 gradio
 gradio_image_annotation
-streamlit
 
 # Document processing
 PyMuPDF
@@ -17,7 +16,3 @@ accelerate
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 python-multipart>=0.0.6
-
-# Testing and examples
-requests>=2.28.0
-pillow>=9.0.0
