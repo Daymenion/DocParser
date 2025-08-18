@@ -3,14 +3,17 @@
 PROJECT_NAME := doc-parser
 DOCKER_DIR := docker
 COMPOSE := docker-compose -f $(DOCKER_DIR)/docker-compose.yml
-PY := python
+PY := $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null)
 WEIGHTS := weights/DotsOCR
 
 .PHONY: ensure-model
 ensure-model:
-	@if [ ! -d "$(WEIGHTS)" ] || [ -z "`ls -A $(WEIGHTS) 2>/dev/null`" ]; then \
+	@if [ -z "$(PY)" ]; then \
+		echo "[ensure-model] Python not found. Please install python3."; exit 127; \
+	fi; \
+	if [ ! -d "$(WEIGHTS)" ] || [ -z "`ls -A $(WEIGHTS) 2>/dev/null`" ]; then \
 		echo "[ensure-model] Weights not found in $(WEIGHTS). Downloading..."; \
-		$(PY) tools/download_model.py --type huggingface --name rednote-hilab/dots.ocr; \
+		"$(PY)" tools/download_model.py --type huggingface --name rednote-hilab/dots.ocr; \
 	else \
 		echo "[ensure-model] Weights already present in $(WEIGHTS)."; \
 	fi
