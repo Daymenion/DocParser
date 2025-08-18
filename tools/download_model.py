@@ -1,6 +1,8 @@
 from argparse import ArgumentParser
 import os
-
+import importlib
+import subprocess
+import sys
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -13,6 +15,15 @@ if __name__ == '__main__':
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
     if args.type == "huggingface":
+        # Ensure huggingface_hub is available by installing it via pip if missing
+        try:
+            importlib.import_module("huggingface_hub")
+        except ImportError:
+            print("Installing huggingface_hub via pip...")
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "huggingface_hub"])
+            except subprocess.CalledProcessError as e:
+                raise RuntimeError(f"Failed to install huggingface_hub: {e}") from e
         from huggingface_hub import snapshot_download
         snapshot_download(repo_id=args.name, local_dir=model_dir, local_dir_use_symlinks=False, resume_download=True)
     elif args.type == "modelscope":
