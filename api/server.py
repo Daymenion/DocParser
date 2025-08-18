@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from dots_ocr.parser import DotsOCRParser
+import requests
 
 # Optional: mount existing Gradio UI onto FastAPI
 try:
@@ -66,6 +67,15 @@ def health():
     return {"status": "ok", "vllm": {"host": VLLM_HOST, "port": VLLM_PORT}}
 
 
+@app.get("/health/vllm")
+def health_vllm():
+    try:
+        r = requests.get(f"http://{VLLM_HOST}:{VLLM_PORT}/v1/models", timeout=2)
+        return {"ok": r.ok, "status_code": r.status_code}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 @app.post("/api/parse")
 async def parse_document(
     file: UploadFile = File(...),
@@ -84,6 +94,14 @@ async def parse_document(
     suffix = Path(file.filename or "upload").suffix.lower()
     if suffix not in [".pdf", ".png", ".jpg", ".jpeg"]:
         raise HTTPException(status_code=400, detail="Unsupported file type. Please upload PDF or PNG/JPG images.")
+
+    # Preflight: ensure vLLM is reachable to avoid long timeouts
+    try:
+        pr = requests.get(f"http://{VLLM_HOST}:{VLLM_PORT}/v1/models", timeout=2)
+        if pr.status_code >= 400:
+            raise RuntimeError(f"vLLM reachable but returned status {pr.status_code}")
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"vLLM server not reachable at {VLLM_HOST}:{VLLM_PORT}. Start the vLLM service. Error: {e}")
 
     # Persist upload to a temp file for processing
     tmp_dir = Path(tempfile.mkdtemp(prefix="dotsocr_api_"))

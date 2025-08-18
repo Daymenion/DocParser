@@ -7,26 +7,26 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     container_name: doc-parser-vllm
+    restart: unless-stopped
     ports:
-      - "9998:8000"  # expose vLLM OpenAI server
+      - "9998:8000"
     environment:
       PYTHONPATH: /workspace/weights
-    volumes:
-      - ../weights/DotsOCR:/workspace/weights/DotsOCR
     deploy:
       resources:
         reservations:
           devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    entrypoint:
-      - /bin/bash
-      - -c
+            - capabilities: [gpu]
+              device_ids: ['1']
+    volumes:
+      - ../weights/DotsOCR:/workspace/weights/DotsOCR
+    entrypoint: ["/bin/bash", "-lc"]
     command: |
-      set -ex;
-      echo '--- Starting vLLM server (doc-parser) ---';
-      sed -i '/^from vllm\.entrypoints\.cli\.main import main/a from DotsOCR import modeling_dots_ocr_vllm' $$(which vllm) || true;
+      set -e
+      echo "--- Starting vLLM server (doc-parser) ---"
+      echo "PYTHONPATH=$PYTHONPATH"
+      ls -la /workspace/weights/DotsOCR || true
+      python -c "import DotsOCR.modeling_dots_ocr_vllm" || true
       exec vllm serve /workspace/weights/DotsOCR \
         --tensor-parallel-size 1 \
         --gpu-memory-utilization 0.55 \
@@ -40,15 +40,15 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.app
     container_name: doc-parser-app
+    restart: unless-stopped
     depends_on:
       - doc-parser-vllm
     environment:
-      - APP_PORT=7860
-      - VLLM_HOST=doc-parser-vllm
-      - VLLM_PORT=8000
+      APP_PORT: "7860"
+      VLLM_HOST: doc-parser-vllm
+      VLLM_PORT: "8000"
     ports:
-      - "7860:7860"  # FastAPI + Gradio
-    volumes: []
+      - "7860:7860"
 
 
 
