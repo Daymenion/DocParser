@@ -20,19 +20,17 @@ services:
               device_ids: ['1']
     volumes:
       - ../weights/DotsOCR:/workspace/weights/DotsOCR
-    entrypoint: ["/bin/bash", "-lc"]
-    command: |
-      set -e
-      echo "--- Starting vLLM server (doc-parser) ---"
-      echo "PYTHONPATH=$PYTHONPATH"
-      ls -la /workspace/weights/DotsOCR || true
-      python -c "import DotsOCR.modeling_dots_ocr_vllm" || true
-      exec vllm serve /workspace/weights/DotsOCR \
-        --tensor-parallel-size 1 \
-        --gpu-memory-utilization 0.55 \
-        --chat-template-content-format string \
-        --served-model-name model \
-        --trust-remote-code
+    entrypoint: ["vllm"]
+    command: [
+      "serve", "/workspace/weights/DotsOCR",
+      "--host", "0.0.0.0",
+      "--port", "8000",
+      "--tensor-parallel-size", "1",
+      "--gpu-memory-utilization", "0.55",
+      "--chat-template-content-format", "string",
+      "--served-model-name", "model",
+      "--trust-remote-code"
+    ]
 
   doc-parser-app:
     image: doc-parser:app
