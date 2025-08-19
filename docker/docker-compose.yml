@@ -10,7 +10,8 @@ services:
     ports:
       - "9998:9998"
     environment:
-      PYTHONPATH: /workspace/weights:$PYTHONPATH
+      # IMPORTANT: Escape $ so Compose doesn't interpolate host env; keep it for runtime shell
+      PYTHONPATH: "/workspace/weights:$$PYTHONPATH"
       # Pin to GPU 1 (change if needed)
       NVIDIA_VISIBLE_DEVICES: "1"
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
@@ -21,24 +22,37 @@ services:
     command:
       - -c
       - |
-        set -ex;
-        echo '--- Starting dots.ocr vLLM server on :9998 (GPU 1) ---';
-        echo 'Patching vllm entrypoint to import DotsOCR custom modeling...';
-        sed -i '/^from vllm\.entrypoints\.cli\.main import main/a from DotsOCR import modeling_dots_ocr_vllm' $(which vllm) && \
-        echo 'Patched vllm script snippet:' && \
-        grep -A 1 'from vllm.entrypoints.cli.main import main' $(which vllm) || true; \
-        export CUDA_VISIBLE_DEVICES=1; \
-        echo 'Launching vllm serve...';
-        exec vllm serve /workspace/weights/DotsOCR \
-            --host 0.0.0.0 \
-            --port 9998 \
-            --device cuda \
-            --dtype auto \
-            --tensor-parallel-size 1 \
-            --gpu-memory-utilization 0.8 \
-            --chat-template-content-format string \
-            --served-model-name model \
-            --trust-remote-code
+        set -ex
+        echo "--- Starting dots.ocr vLLM server on :9998 (GPU 1) ---"
+        # Configure paths as upstream suggests
+        hf_model_path="/workspace/weights/DotsOCR"
+        export PYTHONPATH="/workspace/weights:$$PYTHONPATH"
+        echo "HF model path: $$hf_model_path"
+        echo "PYTHONPATH: $$PYTHONPATH"
+
+        # Ensure model path exists and is populated
+        if [ ! -d "$$hf_model_path" ] || [ -z "$(ls -A "$$hf_model_path" 2>/dev/null)" ]; then
+          echo "ERROR: Model path '$$hf_model_path' is missing or empty."
+          echo "Mount your weights to /workspace/weights/DotsOCR (e.g., ../weights/DotsOCR)."
+          exit 1
+        fi
+
+        echo "Patching vllm entrypoint to import DotsOCR custom modeling..."
+        sed -i "/^from vllm\\.entrypoints\\.cli\\.main import main$/a from DotsOCR import modeling_dots_ocr_vllm" $$(which vllm)
+        echo "Patched snippet:"
+        grep -A 1 'from vllm.entrypoints.cli.main import main' $$(which vllm) || true
+
+        echo "Launching vllm serve..."
+        CUDA_VISIBLE_DEVICES=1 exec vllm serve "$$hf_model_path" \
+          --host 0.0.0.0 \
+          --port 9998 \
+          --device cuda \
+          --dtype auto \
+          --tensor-parallel-size 1 \
+          --gpu-memory-utilization 0.95 \
+          --chat-template-content-format string \
+          --served-model-name model \
+          --trust-remote-code
 
   doc-parser-app:
     image: doc-parser:app
