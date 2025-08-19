@@ -1,41 +1,33 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  # Service running the DotsOCR vLLM backend
-  doc-parser-vllm:
-    image: rednotehilab/dots.ocr:latest
-    container_name: doc-parser-vllm
-    restart: unless-stopped
-    # For Compose v1; v2'de deploy.gpus kullanılabilir
-    runtime: nvidia
-    ports:
-      - '9998:9998'
-    environment:
-      # Compose'un host env interpolasyonunu engellemek için $ kaçışına gerek kalmadı;
-      # asıl export işlemini script içinde yapıyoruz.
-      NVIDIA_VISIBLE_DEVICES: '1'
-      NVIDIA_DRIVER_CAPABILITIES: compute,utility
-      VLLM_LOGGING_LEVEL: INFO
-    volumes:
-      - ../weights/DotsOCR:/workspace/weights/DotsOCR
-      # Başlangıç betiğini konteynere read-only mount ediyoruz
-      - ./scripts/start-vllm.sh:/usr/local/bin/start-vllm.sh:ro
-    entrypoint: /bin/bash
-    command: ["/usr/local/bin/start-vllm.sh"]
-
-  # Service exposing the DocParser API + UI. This service depends on the vllm backend.
-  doc-parser-app:
-    image: doc-parser:app
+  app:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile.app
-    container_name: doc-parser-app
+      context: .
+      dockerfile: Dockerfile
+    image: docparser-app:latest
+    container_name: docparser-app
     restart: unless-stopped
-    depends_on:
-      - doc-parser-vllm
-    environment:
-      APP_PORT: '7860'
-      VLLM_HOST: doc-parser-vllm
-      VLLM_PORT: '9998'
+
+    # vLLM (9998) ve FastAPI (7860) ikisini de dışarı aç
     ports:
-      - '7860:7860'
+      - "7860:7860"
+      - "9998:9998"
+
+    # Ağırlıkları host'tan bağla (klasör adı noktasız!)
+    volumes:
+      - ../weights/DotsOCR:/workspace/weights/DotsOCR:ro
+
+    # GPU erişimi (Compose v2 çözümü)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    # GPU seçimi için env (Compose 'deploy' yoksa env ile de seçebilirsin)
+    environment:
+      HF_MODEL_PATH: /workspace/weights/DotsOCR
+      NVIDIA_VISIBLE_DEVICES: "1"
