@@ -1,19 +1,17 @@
 version: '3.8'
 
 services:
+  # Service running the DotsOCR vLLM backend
   doc-parser-vllm:
     image: rednotehilab/dots.ocr:latest
     container_name: doc-parser-vllm
     restart: unless-stopped
-    # Enable NVIDIA GPUs for docker-compose v1 setups
     runtime: nvidia
     ports:
-      - "9998:9998"
+      - '9998:9998'
     environment:
-      # IMPORTANT: Escape $ so Compose doesn't interpolate host env; keep it for runtime shell
       PYTHONPATH: "/workspace/weights:$$PYTHONPATH"
-      # Pin to GPU 1 (change if needed)
-      NVIDIA_VISIBLE_DEVICES: "1"
+      NVIDIA_VISIBLE_DEVICES: '1'
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
       VLLM_LOGGING_LEVEL: INFO
     volumes:
@@ -23,22 +21,20 @@ services:
       - -c
       - |
         set -ex
-        echo "--- Starting dots.ocr vLLM server on :9998 (GPU 1) ---"
-        # Configure paths as upstream suggests
+        echo '--- Starting dots.ocr vLLM server on :9998 (GPU 1) ---'
         hf_model_path="/workspace/weights/DotsOCR"
         export PYTHONPATH="/workspace/weights:$$PYTHONPATH"
         echo "HF model path: $$hf_model_path"
         echo "PYTHONPATH: $$PYTHONPATH"
 
-        # Ensure model path exists and is populated
-        if [ ! -d "$$hf_model_path" ] || [ -z "$(ls -A "$$hf_model_path" 2>/dev/null)" ]; then
+        if [ ! -d "$$hf_model_path" ] || [ -z "$$(ls -A "$$hf_model_path" 2>/dev/null)" ]; then
           echo "ERROR: Model path '$$hf_model_path' is missing or empty."
           echo "Mount your weights to /workspace/weights/DotsOCR (e.g., ../weights/DotsOCR)."
           exit 1
         fi
 
         echo "Patching vllm entrypoint to import DotsOCR custom modeling..."
-        sed -i "/^from vllm\\.entrypoints\\.cli\\.main import main$/a from DotsOCR import modeling_dots_ocr_vllm" $$(which vllm)
+        sed -i "/^from vllm\.entrypoints\.cli\.main import main$/a from DotsOCR import modeling_dots_ocr_vllm" $$(which vllm)
         echo "Patched snippet:"
         grep -A 1 'from vllm.entrypoints.cli.main import main' $$(which vllm) || true
 
@@ -54,6 +50,7 @@ services:
           --served-model-name model \
           --trust-remote-code
 
+  # Service exposing the DocParser API + UI
   doc-parser-app:
     image: doc-parser:app
     build:
@@ -64,12 +61,8 @@ services:
     depends_on:
       - doc-parser-vllm
     environment:
-      APP_PORT: "7860"
+      APP_PORT: '7860'
       VLLM_HOST: doc-parser-vllm
-      VLLM_PORT: "9998"
+      VLLM_PORT: '9998'
     ports:
-      - "7860:7860"
-
-
-
-
+      - '7860:7860'
