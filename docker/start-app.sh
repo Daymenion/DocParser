@@ -4,7 +4,7 @@ set -Eeuo pipefail
 # ---- Parametreler / Defaults ----
 : "${HF_MODEL_PATH:=/workspace/weights/DotsOCR}"  # klasör adı noktasız olmalı (DotsOCR)
 : "${APP_PORT:=7860}"
-: "${VLLM_PORT:=9998}"
+: "${VLLM_PORT:=6006}"
 
 # PYTHONPATH: model klasörünün parent'ı
 export PYTHONPATH="$(dirname "$HF_MODEL_PATH"):${PYTHONPATH:-}"

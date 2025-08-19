@@ -21,10 +21,10 @@ RUN chmod +x /opt/entrypoint/start-app.sh
 
 # Varsayılan ortam
 ENV APP_PORT=7860 \
-    VLLM_PORT=9998 \
+    VLLM_PORT=6006 \
     HF_MODEL_PATH=/workspace/weights/DotsOCR
 
-EXPOSE 7860 9998
+EXPOSE 7860 6006
 
 ENTRYPOINT ["/usr/bin/tini","-g","--"]
 CMD ["/opt/entrypoint/start-app.sh"]

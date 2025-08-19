@@ -9,10 +9,10 @@ services:
     container_name: docparser-app
     restart: unless-stopped
 
-    # vLLM (9998) + FastAPI (7860)
+    # vLLM (6006) + FastAPI (7860)
     ports:
       - "7860:7860"
-      - "9998:9998"
+      - "6006:6006"
 
     # Ağırlıkları host'tan bağla (compose dosyası docker/ altında olduğu için ../ kullan)
     volumes:
@@ -24,8 +24,13 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['1']     # host’taki 1 no’lu GPU'yu istiyorum
+              device_ids: ['1']    # host'taki GPU 1'i ver
               capabilities: [gpu]
-
+    # Eski/karma kurulumlarla uyumluluk için ekle (v2’de de sorun çıkarmaz):
+    gpus: "device=1"
+    # vLLM dökümanlarındaki pratik tavsiye:
+    ipc: host
     environment:
+      APP_PORT: "7860"
+      VLLM_PORT: "6006" # app -> vLLM port
       HF_MODEL_PATH: /workspace/weights/DotsOCR
