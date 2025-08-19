@@ -5,8 +5,6 @@ gradio_image_annotation
 # Document processing
 PyMuPDF
 openai
-qwen_vl_utils
-transformers==4.51.3
 huggingface_hub
 modelscope
 flash-attn==2.8.0.post2
