@@ -1,7 +1,7 @@
 # Simple Makefile for dots.ocr app and vLLM stack
 
 PROJECT_NAME := doc-parser
-DOCKER_DIR := docker
+DOCKER_DIR := .
 COMPOSE := docker-compose -f $(DOCKER_DIR)/docker-compose.yml
 PY := $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null)
 WEIGHTS := weights/DotsOCR
