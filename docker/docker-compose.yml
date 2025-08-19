@@ -3,22 +3,22 @@ version: "3.8"
 services:
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..                # Build context PROJE KÖKÜ
+      dockerfile: docker/Dockerfile
     image: docparser-app:latest
     container_name: docparser-app
     restart: unless-stopped
 
-    # vLLM (9998) ve FastAPI (7860) ikisini de dışarı aç
+    # vLLM (9998) + FastAPI (7860)
     ports:
       - "7860:7860"
       - "9998:9998"
 
-    # Ağırlıkları host'tan bağla (klasör adı noktasız!)
+    # Ağırlıkları host'tan bağla (compose dosyası docker/ altında olduğu için ../ kullan)
     volumes:
-      - weights/DotsOCR:/workspace/weights/DotsOCR:ro
+      - ../weights/DotsOCR:/workspace/weights/DotsOCR:ro
 
-    # GPU erişimi (Compose v2 çözümü)
+    # GPU erişimi (Compose v2)
     deploy:
       resources:
         reservations:
@@ -27,7 +27,6 @@ services:
               count: 1
               capabilities: [gpu]
 
-    # GPU seçimi için env (Compose 'deploy' yoksa env ile de seçebilirsin)
     environment:
       HF_MODEL_PATH: /workspace/weights/DotsOCR
-      NVIDIA_VISIBLE_DEVICES: "1"
+      NVIDIA_VISIBLE_DEVICES: "1"   # GPU 1'i seç

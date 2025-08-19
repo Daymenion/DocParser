@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# ---- Parametreler / Varsayılanlar ----
-: "${HF_MODEL_PATH:=/workspace/weights/DotsOCR}"  # klasör adı noktasız olmalı (DotsOCR)  ← önemli
+# ---- Parametreler / Defaults ----
+: "${HF_MODEL_PATH:=/workspace/weights/DotsOCR}"  # klasör adı noktasız olmalı (DotsOCR)
 : "${APP_PORT:=7860}"
 : "${VLLM_PORT:=9998}"
-# x86 için genellikle --gpus yeterli; ama env'den de alalım:
 : "${CUDA_VISIBLE_DEVICES:=${NVIDIA_VISIBLE_DEVICES:-all}}"
 
 # PYTHONPATH: model klasörünün parent'ı
@@ -13,7 +12,7 @@ export PYTHONPATH="$(dirname "$HF_MODEL_PATH"):${PYTHONPATH:-}"
 
 echo "HF_MODEL_PATH = ${HF_MODEL_PATH}"
 echo "PYTHONPATH    = ${PYTHONPATH}"
-echo "GPU(s)        = ${CUDA_VISIBLE_DEVICES}"
+echo "CUDA_VISIBLE_DEVICES = ${CUDA_VISIBLE_DEVICES}"
 
 # ---- Model klasörü kontrolü ----
 if [[ ! -d "${HF_MODEL_PATH}" ]] || [[ -z "$(ls -A "${HF_MODEL_PATH}" 2>/dev/null || true)" ]]; then
@@ -24,7 +23,7 @@ fi
 # ---- vLLM entrypoint patch (idempotent) ----
 VLLM_BIN="$(command -v vllm)"
 if ! grep -q 'from DotsOCR import modeling_dots_ocr_vllm' "${VLLM_BIN}"; then
-  # Upstream'in önerdiği satırı 'main' importunun altına ekle
+  # Upstream önerisi: 'main' import'unun altına ekle
   sed -i '/^from vllm\.entrypoints\.cli\.main import main$/a\
 from DotsOCR import modeling_dots_ocr_vllm' "${VLLM_BIN}"
 fi
@@ -51,11 +50,6 @@ for i in {1..90}; do
   sleep 1
 done
 
-# ---- Uygulamayı başlat (FastAPI) ----
-echo "Starting DocParser app on :${APP_PORT} ..."
-if [[ -f "/app/app.py" ]]; then
-  exec python /app/app.py --mode api --port "${APP_PORT}"
-else
-  # yedek: doğrudan uvicorn
-  exec uvicorn api.api_server:app --host 0.0.0.0 --port "${APP_PORT}"
-fi
+# ---- FastAPI'yi başlat ----
+# Uygulaman 'api/server.py' içinde ve 'app' değişkeni var dedin:
+exec uvicorn api.server:app --host 0.0.0.0 --port "${APP_PORT}"
