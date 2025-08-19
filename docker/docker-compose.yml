@@ -8,25 +8,26 @@ services:
       dockerfile: docker/Dockerfile
     container_name: doc-parser-vllm
     restart: unless-stopped
-    # Request NVIDIA GPUs via Compose (works with docker compose, not swarm)
-    # To pin a specific GPU, run with: docker compose --profile gpu (and adjust as needed),
-    # or override at runtime. For broad compatibility, default to all GPUs here.
-    gpus: all
+    # Enable NVIDIA GPUs for legacy docker-compose setups (compose v1) or when --gpus is unavailable.
+    # If your docker compose supports the 'gpus:' key, you can use that instead of 'runtime'.
+    runtime: nvidia
     ports:
-      - "9998:8000"
+      - "9998:9998"
     environment:
       PYTHONPATH: /workspace/weights
       # Optional NVIDIA hints (Compose sets these automatically for most setups)
-      CUDA_VISIBLE_DEVICES: "1"
-      NVIDIA_VISIBLE_DEVICES: "1"
+      NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      # Enable verbose logging if device detection fails
+      VLLM_LOGGING_LEVEL: INFO
     volumes:
       - ../weights/DotsOCR:/workspace/weights/DotsOCR
     entrypoint: ["vllm"]
     command: [
       "serve", "/workspace/weights/DotsOCR",
       "--host", "0.0.0.0",
-      "--port", "8000",
+      "--port", "9998",
+      "--device", "cuda",
       "--dtype", "auto",
       "--tensor-parallel-size", "1",
       "--gpu-memory-utilization", "0.55",
@@ -47,7 +48,7 @@ services:
     environment:
       APP_PORT: "7860"
       VLLM_HOST: doc-parser-vllm
-      VLLM_PORT: "8000"
+      VLLM_PORT: "9998"
     ports:
       - "7860:7860"
 
