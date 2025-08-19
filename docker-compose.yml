@@ -16,7 +16,7 @@ services:
 
     # Ağırlıkları host'tan bağla (klasör adı noktasız!)
     volumes:
-      - ../weights/DotsOCR:/workspace/weights/DotsOCR:ro
+      - weights/DotsOCR:/workspace/weights/DotsOCR:ro
 
     # GPU erişimi (Compose v2 çözümü)
     deploy:
