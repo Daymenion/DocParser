@@ -26,11 +26,15 @@ if ! grep -q 'from DotsOCR import modeling_dots_ocr_vllm' "${VLLM_BIN}"; then
 from DotsOCR import modeling_dots_ocr_vllm' "${VLLM_BIN}"
 fi
 
+# FlashAttention gürültüsünü azalt (opsiyonel)
+export VLLM_FLASH_ATTN_VERSION="${VLLM_FLASH_ATTN_VERSION:-2}"
+
 echo "Starting vLLM on :${VLLM_PORT} ..."
-# CUDA_VISIBLE_DEVICES ayarlamıyoruz; MIG seçimini NVIDIA_VISIBLE_DEVICES belirleyecek
+# DİKKAT: --device cuda ekledik (infer yerine doğrudan CUDA kullan)
 vllm serve "${HF_MODEL_PATH}" \
-  --host 0.0.0.0 \
+  --host 127.0.0.1 \
   --port "${VLLM_PORT}" \
+  --device cuda \
   --tensor-parallel-size "${TENSOR_PARALLEL_SIZE:-1}" \
   --gpu-memory-utilization "${GPU_MEM_UTIL:-0.65}" \
   --chat-template-content-format string \

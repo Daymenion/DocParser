@@ -9,23 +9,21 @@ services:
     container_name: docparser-app
     restart: unless-stopped
 
-    # GPU erişimi (Compose GPU how-to'ya uygun)
-    gpus: all
-
+    # GPU erişimi (Compose GPU how-to)
     environment:
-      # Uygulama / model
       HF_MODEL_PATH: /workspace/weights/DotsOCR
       APP_PORT: "7860"
       VLLM_PORT: "6013"
 
-      # *** MIG cihazını sabitleyin ***
+      # *** SADECE MIG UUID yaz (başında 'device 0:' YOK) ***
       NVIDIA_VISIBLE_DEVICES: "MIG-3a4edec0-1c0a-5174-813a-1838d7b700bd"
 
-      # CUDA için gerekli driver capability'leri
+      # CUDA için gerekli capability
       NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
 
+      # (opsiyonel) FA2
+      VLLM_FLASH_ATTN_VERSION: "2"
 
-    # vLLM ve uvicorn için faydalı olabilir
     ipc: host
     ulimits:
       memlock: -1
