@@ -23,7 +23,7 @@ ensure-model:
 all: build up
 
 build: ensure-model
-	$(COMPOSE) build
+	$(COMPOSE) build --no-cache
 
 up:
 	$(COMPOSE) up -d

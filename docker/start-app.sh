@@ -5,7 +5,7 @@ set -Eeuo pipefail
 : "${HF_MODEL_PATH:=/workspace/weights/DotsOCR}"  # klasör adı noktasız olmalı (DotsOCR)
 : "${APP_PORT:=7860}"
 : "${VLLM_PORT:=9998}"
-: "${CUDA_VISIBLE_DEVICES:=${NVIDIA_VISIBLE_DEVICES:-all}}"
+: "${CUDA_VISIBLE_DEVICES:=${NVIDIA_VISIBLE_DEVICES:-1}}"
 
 # PYTHONPATH: model klasörünün parent'ı
 export PYTHONPATH="$(dirname "$HF_MODEL_PATH"):${PYTHONPATH:-}"
@@ -35,7 +35,7 @@ CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES}" \
     --host 0.0.0.0 \
     --port "${VLLM_PORT}" \
     --tensor-parallel-size "${TENSOR_PARALLEL_SIZE:-1}" \
-    --gpu-memory-utilization "${GPU_MEM_UTIL:-0.95}" \
+    --gpu-memory-utilization "${GPU_MEM_UTIL:-0.65}" \
     --chat-template-content-format string \
     --served-model-name model \
     --trust-remote-code &
