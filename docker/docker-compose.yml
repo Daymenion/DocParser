@@ -24,9 +24,8 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: 1
+              device_ids: ['1']     # host’taki 1 no’lu GPU'yu istiyorum
               capabilities: [gpu]
 
     environment:
       HF_MODEL_PATH: /workspace/weights/DotsOCR
-      NVIDIA_VISIBLE_DEVICES: "1"   # GPU 1'i seç
