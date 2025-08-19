@@ -4,33 +4,19 @@ services:
   docparser-app:
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.app
     image: docparser-app:latest
     container_name: docparser-app
     restart: unless-stopped
 
-    # GPU erişimi (Compose GPU how-to)
     environment:
-      HF_MODEL_PATH: /workspace/weights/DotsOCR
       APP_PORT: "7860"
+      VLLM_HOST: "host.docker.internal"
       VLLM_PORT: "6013"
 
-      # *** SADECE MIG UUID yaz (başında 'device 0:' YOK) ***
-      NVIDIA_VISIBLE_DEVICES: "MIG-3a4edec0-1c0a-5174-813a-1838d7b700bd"
-
-      # CUDA için gerekli capability
-      NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
-
-      # (opsiyonel) FA2
-      VLLM_FLASH_ATTN_VERSION: "2"
-
-    ipc: host
-    ulimits:
-      memlock: -1
-
-    volumes:
-      - ../weights/DotsOCR:/workspace/weights/DotsOCR:ro
+    # Linux'ta host.docker.internal -> host-gateway eşlemesi
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
     ports:
-      - "7860:7860"   # FastAPI
-      - "6013:6013"   # vLLM
+      - "7860:7860"

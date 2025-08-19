@@ -1,56 +1,22 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-: "${HF_MODEL_PATH:=/workspace/weights/DotsOCR}"
 : "${APP_PORT:=7860}"
+: "${VLLM_HOST:=host.docker.internal}"   # hosttaki vLLM
 : "${VLLM_PORT:=6013}"
 
-# Model klasörünün parent'ını PYTHONPATH'e ekle
-export PYTHONPATH="$(dirname "$HF_MODEL_PATH"):${PYTHONPATH:-}"
-export CUDA_DEVICE_ORDER=PCI_BUS_ID
+echo "APP_PORT   = ${APP_PORT}"
+echo "VLLM_HOST  = ${VLLM_HOST}"
+echo "VLLM_PORT  = ${VLLM_PORT}"
 
-echo "HF_MODEL_PATH = ${HF_MODEL_PATH}"
-echo "PYTHONPATH    = ${PYTHONPATH}"
-echo "NVIDIA_VISIBLE_DEVICES = ${NVIDIA_VISIBLE_DEVICES:-<unset>}"
-
-# Klasör kontrolü
-if [[ ! -d "${HF_MODEL_PATH}" ]] || [[ -z "$(ls -A "${HF_MODEL_PATH}" 2>/dev/null || true)" ]]; then
-  echo "ERROR: '${HF_MODEL_PATH}' yok veya boş."
-  exit 1
-fi
-
-# vLLM entrypoint patch (idempotent)
-VLLM_BIN="$(command -v vllm)"
-if ! grep -q 'from DotsOCR import modeling_dots_ocr_vllm' "${VLLM_BIN}"; then
-  sed -i '/^from vllm\.entrypoints\.cli\.main import main$/a\
-from DotsOCR import modeling_dots_ocr_vllm' "${VLLM_BIN}"
-fi
-
-# FlashAttention gürültüsünü azalt (opsiyonel)
-export VLLM_FLASH_ATTN_VERSION="${VLLM_FLASH_ATTN_VERSION:-2}"
-
-echo "Starting vLLM on :${VLLM_PORT} ..."
-# DİKKAT: --device cuda ekledik (infer yerine doğrudan CUDA kullan)
-vllm serve "${HF_MODEL_PATH}" \
-  --host 127.0.0.1 \
-  --port "${VLLM_PORT}" \
-  --device cuda \
-  --tensor-parallel-size "${TENSOR_PARALLEL_SIZE:-1}" \
-  --gpu-memory-utilization "${GPU_MEM_UTIL:-0.65}" \
-  --chat-template-content-format string \
-  --served-model-name model \
-  --trust-remote-code &
-
-VLLM_PID=$!
-
-# Health check
-for _ in {1..90}; do
-  if curl -fsS "http://127.0.0.1:${VLLM_PORT}/health" >/dev/null 2>&1; then
-    echo "vLLM is up."
+# vLLM health (bekle ama bloklama yok – 20 sn, geçilemezse uyar ve yine de app'i başlat)
+for _ in {1..20}; do
+  if curl -fsS "http://${VLLM_HOST}:${VLLM_PORT}/health" >/dev/null 2>&1; then
+    echo "vLLM reachable."
     break
   fi
   sleep 1
-done
+done || true
 
-# FastAPI
+# FastAPI (api/server.py içinde app objesi var demiştin)
 exec uvicorn api.server:app --host 0.0.0.0 --port "${APP_PORT}"

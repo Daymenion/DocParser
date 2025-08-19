@@ -1,30 +1,24 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_CACHE_DIR=1
-
-WORKDIR /app
-
-# System deps (minimal)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+      curl tini && \
+    rm -rf /var/lib/apt/lists/*
 
-COPY docker/requirements-app.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+WORKDIR /workspace
 
-# Copy source
-COPY . /app
+# requirements.txt kökte
+COPY requirements.txt /workspace/requirements.txt
+RUN pip install --no-cache-dir -r /workspace/requirements.txt
 
-ENV PYTHONPATH=/app
+# app kodu
+COPY . /workspace
 
-# App config
-ENV APP_PORT=7860 \
-    VLLM_HOST=doc-parser-vllm \
-    VLLM_PORT=8000
+# start script
+COPY docker/start-app.sh /opt/entrypoint/start-app.sh
+RUN chmod +x /opt/entrypoint/start-app.sh
 
+ENV APP_PORT=7860
 EXPOSE 7860
 
-CMD ["python", "-m", "uvicorn", "api.server:app", "--host", "0.0.0.0", "--port", "7860"]
+ENTRYPOINT ["/usr/bin/tini","-g","--"]
+CMD ["/opt/entrypoint/start-app.sh"]
