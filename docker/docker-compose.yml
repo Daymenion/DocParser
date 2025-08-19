@@ -1,36 +1,38 @@
 version: "3.8"
 
 services:
-  app:
+  docparser-app:
     build:
-      context: ..                # Build context PROJE KÖKÜ
+      context: ..
       dockerfile: docker/Dockerfile
     image: docparser-app:latest
     container_name: docparser-app
     restart: unless-stopped
 
-    # vLLM (6006) + FastAPI (7860)
-    ports:
-      - "7860:7860"
-      - "6006:6006"
+    # GPU erişimi (Compose GPU how-to'ya uygun)
+    gpus: all
 
-    # Ağırlıkları host'tan bağla (compose dosyası docker/ altında olduğu için ../ kullan)
+    environment:
+      # Uygulama / model
+      HF_MODEL_PATH: /workspace/weights/DotsOCR
+      APP_PORT: "7860"
+      VLLM_PORT: "6013"
+
+      # *** MIG cihazını sabitleyin ***
+      NVIDIA_VISIBLE_DEVICES: "MIG-3a4edec0-1c0a-5174-813a-1838d7b700bd"
+
+      # CUDA için gerekli driver capability'leri
+      NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+
+
+    # vLLM ve uvicorn için faydalı olabilir
+    ipc: host
+    ulimits:
+      memlock: -1
+
     volumes:
       - ../weights/DotsOCR:/workspace/weights/DotsOCR:ro
 
-    # GPU erişimi (Compose v2)
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['1']    # host'taki GPU 1'i ver
-              capabilities: [gpu]
-    # Eski/karma kurulumlarla uyumluluk için ekle (v2’de de sorun çıkarmaz):
-    gpus: "device=1"
-    # vLLM dökümanlarındaki pratik tavsiye:
-    ipc: host
-    environment:
-      APP_PORT: "7860"
-      VLLM_PORT: "6006" # app -> vLLM port
-      HF_MODEL_PATH: /workspace/weights/DotsOCR
+    ports:
+      - "7860:7860"   # FastAPI
+      - "6013:6013"   # vLLM
