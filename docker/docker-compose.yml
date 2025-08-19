@@ -2,39 +2,43 @@ version: '3.8'
 
 services:
   doc-parser-vllm:
-    image: doc-parser:vllm
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
+    image: rednotehilab/dots.ocr:latest
     container_name: doc-parser-vllm
     restart: unless-stopped
-    # Enable NVIDIA GPUs for legacy docker-compose setups (compose v1) or when --gpus is unavailable.
-    # If your docker compose supports the 'gpus:' key, you can use that instead of 'runtime'.
+    # Enable NVIDIA GPUs for docker-compose v1 setups
     runtime: nvidia
     ports:
       - "9998:9998"
     environment:
-      PYTHONPATH: /workspace/weights
-      # Optional NVIDIA hints (Compose sets these automatically for most setups)
-      NVIDIA_VISIBLE_DEVICES: all
+      PYTHONPATH: /workspace/weights:$PYTHONPATH
+      # Pin to GPU 1 (change if needed)
+      NVIDIA_VISIBLE_DEVICES: "1"
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
-      # Enable verbose logging if device detection fails
       VLLM_LOGGING_LEVEL: INFO
     volumes:
       - ../weights/DotsOCR:/workspace/weights/DotsOCR
-    entrypoint: ["vllm"]
-    command: [
-      "serve", "/workspace/weights/DotsOCR",
-      "--host", "0.0.0.0",
-      "--port", "9998",
-      "--device", "cuda",
-      "--dtype", "auto",
-      "--tensor-parallel-size", "1",
-      "--gpu-memory-utilization", "0.55",
-      "--chat-template-content-format", "string",
-      "--served-model-name", "model",
-      "--trust-remote-code"
-    ]
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        set -ex;
+        echo '--- Starting dots.ocr vLLM server on :9998 (GPU 1) ---';
+        echo 'Patching vllm entrypoint to import DotsOCR custom modeling...';
+        sed -i '/^from vllm\.entrypoints\.cli\.main import main/a from DotsOCR import modeling_dots_ocr_vllm' $(which vllm) && \
+        echo 'Patched vllm script snippet:' && \
+        grep -A 1 'from vllm.entrypoints.cli.main import main' $(which vllm) || true; \
+        export CUDA_VISIBLE_DEVICES=1; \
+        echo 'Launching vllm serve...';
+        exec vllm serve /workspace/weights/DotsOCR \
+            --host 0.0.0.0 \
+            --port 9998 \
+            --device cuda \
+            --dtype auto \
+            --tensor-parallel-size 1 \
+            --gpu-memory-utilization 0.8 \
+            --chat-template-content-format string \
+            --served-model-name model \
+            --trust-remote-code
 
   doc-parser-app:
     image: doc-parser:app
