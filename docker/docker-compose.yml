@@ -6,51 +6,24 @@ services:
     image: rednotehilab/dots.ocr:latest
     container_name: doc-parser-vllm
     restart: unless-stopped
+    # For Compose v1; v2'de deploy.gpus kullanılabilir
     runtime: nvidia
     ports:
       - '9998:9998'
     environment:
-      PYTHONPATH: "/workspace/weights:$$PYTHONPATH"
+      # Compose'un host env interpolasyonunu engellemek için $ kaçışına gerek kalmadı;
+      # asıl export işlemini script içinde yapıyoruz.
       NVIDIA_VISIBLE_DEVICES: '1'
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
       VLLM_LOGGING_LEVEL: INFO
     volumes:
       - ../weights/DotsOCR:/workspace/weights/DotsOCR
+      # Başlangıç betiğini konteynere read-only mount ediyoruz
+      - ./scripts/start-vllm.sh:/usr/local/bin/start-vllm.sh:ro
     entrypoint: /bin/bash
-    command:
-      - -c
-      - |
-        set -ex
-        echo '--- Starting dots.ocr vLLM server on :9998 (GPU 1) ---'
-        hf_model_path="/workspace/weights/DotsOCR"
-        export PYTHONPATH="/workspace/weights:$$PYTHONPATH"
-        echo "HF model path: $$hf_model_path"
-        echo "PYTHONPATH: $$PYTHONPATH"
+    command: ["/usr/local/bin/start-vllm.sh"]
 
-        if [ ! -d "$$hf_model_path" ] || [ -z "$$(ls -A "$$hf_model_path" 2>/dev/null)" ]; then
-          echo "ERROR: Model path '$$hf_model_path' is missing or empty."
-          echo "Mount your weights to /workspace/weights/DotsOCR (e.g., ../weights/DotsOCR)."
-          exit 1
-        fi
-
-        echo "Patching vllm entrypoint to import DotsOCR custom modeling..."
-        sed -i "/^from vllm\.entrypoints\.cli\.main import main$/a from DotsOCR import modeling_dots_ocr_vllm" $$(which vllm)
-        echo "Patched snippet:"
-        grep -A 1 'from vllm.entrypoints.cli.main import main' $$(which vllm) || true
-
-        echo "Launching vllm serve..."
-        CUDA_VISIBLE_DEVICES=1 exec vllm serve "$$hf_model_path" \
-          --host 0.0.0.0 \
-          --port 9998 \
-          --device cuda \
-          --dtype auto \
-          --tensor-parallel-size 1 \
-          --gpu-memory-utilization 0.95 \
-          --chat-template-content-format string \
-          --served-model-name model \
-          --trust-remote-code
-
-  # Service exposing the DocParser API + UI
+  # Service exposing the DocParser API + UI. This service depends on the vllm backend.
   doc-parser-app:
     image: doc-parser:app
     build:
