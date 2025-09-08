@@ -1,5 +1,6 @@
 x-doc-parser-base: &doc-parser-base
-  image: monkeyocr:latest
+  image: docparser:latest
+  restart: unless-stopped
   volumes:
     - model_data:/app/MonkeyOCR/model_weight
   environment:
