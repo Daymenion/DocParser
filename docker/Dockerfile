@@ -1,5 +1,5 @@
 # Use CUDA environment and install basic dependencies
-FROM nvidia/cuda:12.8.1-runtime-ubuntu22.04
+FROM nvidia/cuda:12.6.3-runtime-ubuntu22.04
 
 RUN apt-get update && apt-get install -y \
     python3.10 python3.10-dev python3-pip \
@@ -19,8 +19,8 @@ RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 RUN pip install --upgrade pip setuptools || echo "Warning: pip upgrade failed"
 
 # Install PyTorch (updated to version 2.6.0)
-ARG CUDA_VERSION=128
-RUN pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cu${CUDA_VERSION}
+ARG CUDA_VERSION=126
+RUN pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu${CUDA_VERSION}
 
 # Copy project code
 COPY --chown=appuser:appuser . /app/MonkeyOCR
