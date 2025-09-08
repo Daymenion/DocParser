@@ -51,6 +51,11 @@ RUN chmod +x /app/MonkeyOCR/download_models.sh /app/MonkeyOCR/entrypoint.sh
 RUN mkdir -p /app/MonkeyOCR/model_weight && chown -R appuser:appuser /app/MonkeyOCR/model_weight
 RUN install -d -m 0775 -o appuser -g appuser /app/tmp
 
+# /dev/nvidia* 
+RUN usermod -aG video appuser || true && usermod -aG render appuser || true
+# pynvml deprecated:
+RUN pip install nvidia-ml-py
+
 # Apply LMDeploy patcher
 ARG LMDEPLOY_PATCHED=false
 RUN if [ "$LMDEPLOY_PATCHED" = "true" ]; then \
