@@ -49,6 +49,7 @@ RUN chmod +x /app/MonkeyOCR/download_models.sh /app/MonkeyOCR/entrypoint.sh
 
 # Create model directory
 RUN mkdir -p /app/MonkeyOCR/model_weight && chown -R appuser:appuser /app/MonkeyOCR/model_weight
+RUN install -d -m 0775 -o appuser -g appuser /app/tmp
 
 # Apply LMDeploy patcher
 ARG LMDEPLOY_PATCHED=false

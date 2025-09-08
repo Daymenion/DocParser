@@ -51,7 +51,7 @@ elif [ "$1" = "bash" ]; then
     exec /bin/bash
 elif [ "$1" = "fastapi" ]; then
     log_info "Starting FastAPI server"
-    mkdir -p /app/tmp
+    mkdir -p "${TMPDIR:-/app/tmp}"
     cd /app/MonkeyOCR
     exec uvicorn api.main:app --host ${FASTAPI_HOST:-0.0.0.0} --port ${FASTAPI_PORT:-7860}
 else
