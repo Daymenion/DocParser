@@ -19,8 +19,9 @@ RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 RUN pip install --upgrade pip setuptools || echo "Warning: pip upgrade failed"
 
 # Install PyTorch (updated to version 2.6.0)
-ARG CUDA_VERSION=126
-RUN pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu${CUDA_VERSION}
+ARG TORCH_CUDA=126
+ENV TORCH_CUDA=${TORCH_CUDA}
+RUN pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu${TORCH_CUDA}
 
 # Copy project code
 COPY --chown=appuser:appuser . /app/MonkeyOCR
@@ -38,7 +39,7 @@ RUN pip install lmdeploy==0.9.2
 RUN pip install modelscope huggingface_hub
 
 # Install PaddlePaddle and PaddleX for PP-DocLayout_plus-L support
-RUN pip install paddlepaddle-gpu==3.0.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu${CUDA_VERSION}/
+RUN pip install paddlepaddle-gpu==3.0.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu${TORCH_CUDA}/
 RUN pip install "paddlex[base]"
 
 # Copy model download scripts
