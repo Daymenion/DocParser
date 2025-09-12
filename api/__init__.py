@@ -1,3 +1,0 @@
-"""
-MonkeyOCR FastAPI Package
-"""

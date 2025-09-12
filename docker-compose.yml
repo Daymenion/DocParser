@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  doc-parser-api:
+    build: .
+    image: doc-parser-api:latest
+    container_name: doc-parser-api
+    ports:
+      - "7860:7860"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - MODEL_PATH=/app/weights/DotsOCR
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    volumes:
+      - ./:/app
+      - ./weights:/app/weights
+    command: ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "7860"]
+
+  doc-parser-ui:
+    build: .
+    image: doc-parser-ui:latest
+    container_name: doc-parser-ui
+    ports:
+      - "6040:6040"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - MODEL_PATH=/app/weights/DotsOCR
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    volumes:
+      - ./:/app
+      - ./weights:/app/weights
+    command: ["python3", "demo/demo_gradio.py", "6040"]
