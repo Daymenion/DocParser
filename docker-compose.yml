@@ -1,32 +1,19 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  doc-parser-api:
+  docparser:
     build: .
-    image: doc-parser-api:latest
-    container_name: doc-parser-api
     ports:
       - "7860:7860"
+      - "6010:6010"
+    restart: on-failure
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - MODEL_PATH=/app/weights/DotsOCR
-    gpus: all
-    volumes:
-      - ./:/app
-      - ./weights:/app/weights
-    command: ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "7860"]
-
-  doc-parser-ui:
-    build: .
-    image: doc-parser-ui:latest
-    container_name: doc-parser-ui
-    ports:
-      - "6040:6040"
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - MODEL_PATH=/app/weights/DotsOCR
-    gpus: all
-    volumes:
-      - ./:/app
-      - ./weights:/app/weights
-    command: ["python3", "demo/demo_gradio.py", "6040"]
+      - CUDA_VISIBLE_DEVICES=1
+    shm_size: 16gb

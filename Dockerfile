@@ -1,40 +1,39 @@
-# syntax=docker/dockerfile:1
+FROM vllm/vllm-openai:v0.8.2 AS dev
 
-FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04
+# Install Python 3.11
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends python3.11 python3.11-venv python3-pip python3.11-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    PIP_NO_CACHE_DIR=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+# Ensure Python 3.11 is default
+RUN ln -sf /usr/bin/python3.11 /usr/bin/python
 
-ENV CUDA_HOME=/usr/local/cuda
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-pip python3-venv python3-dev \
-    git curl ca-certificates \
-    build-essential cmake ninja-build \
-    libglib2.0-0 libsm6 libxext6 libxrender1 libgl1 libx11-6 \
-    locales \
-    libreoffice \
-    fonts-dejavu fonts-noto fonts-noto-cjk \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 && \
-    locale-gen en_US.UTF-8
+ENV GRADIO_SERVER_PORT=7860
+ENV GRADIO_SERVER_NAME="0.0.0.0"
+EXPOSE 7860
 
 WORKDIR /app
 
-COPY requirements.txt /app/requirements.txt
-RUN python3 -m pip install --upgrade pip && \
-    pip install --index-url https://download.pytorch.org/whl/cu128 torch torchvision torchaudio && \
-    pip install --upgrade setuptools wheel packaging && \
-    pip install -r /app/requirements.txt && \
-    pip install fastapi uvicorn[standard]
+# Create and activate virtual environment
+RUN python -m venv /app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
 
-COPY . /app
+# Install dependencies
+COPY requirements.txt setup.py README.md /app/
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Default to API. The Gradio demo can be run separately if needed.
-EXPOSE 7860
+# Copy application code
+COPY docext /app/docext
 
-# Provide an entrypoint to run the API
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "7860"]
+# Install application
+RUN pip install --no-cache-dir -e .
+
+# Install flash-attn separately
+RUN pip install --no-cache-dir flash-attn --no-build-isolation
+
+# Set working directory and entrypoint
+WORKDIR /app/
+RUN adduser --disabled-password --gecos '' --shell /bin/bash appuser
+USER appuser
+ENTRYPOINT ["/app/.venv/bin/python", "-m", "docext.app.app", "--model_name", "hosted_vllm/nanonets/Nanonets-OCR-s", "--no-share", "--vlm_server_port", "6010", "--concurrency_limit", "16", "--ui_port", "7860"]
