@@ -1,11 +1,13 @@
 # syntax=docker/dockerfile:1
 
-FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04
+FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
+
+ENV CUDA_HOME=/usr/local/cuda
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 python3-pip python3-venv python3-dev \
@@ -25,6 +27,7 @@ WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 RUN python3 -m pip install --upgrade pip && \
     pip install --index-url https://download.pytorch.org/whl/cu128 torch torchvision torchaudio && \
+    pip install --upgrade setuptools wheel packaging && \
     pip install -r /app/requirements.txt && \
     pip install fastapi uvicorn[standard]
 

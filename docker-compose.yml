@@ -10,11 +10,7 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - MODEL_PATH=/app/weights/DotsOCR
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
+    gpus: all
     volumes:
       - ./:/app
       - ./weights:/app/weights
@@ -29,11 +25,7 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - MODEL_PATH=/app/weights/DotsOCR
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
+    gpus: all
     volumes:
       - ./:/app
       - ./weights:/app/weights
