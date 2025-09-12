@@ -23,6 +23,8 @@ COPY requirements.txt setup.py README.md /app/
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
+RUN pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu126
+
 # Copy application code
 COPY docext /app/docext
 
@@ -31,6 +33,10 @@ RUN pip install --no-cache-dir -e .
 
 # Install flash-attn separately
 RUN pip install --no-cache-dir flash-attn --no-build-isolation
+
+# Install FlashInfer for CUDA 12.6 + torch 2.6
+RUN pip install --no-cache-dir \
+    https://flashinfer.ai/whl/cu126/torch2.6/flashinfer-python/flashinfer_python-0.2.5+cu126torch2.6-cp38-abi3-linux_x86_64.whl
 
 # Set working directory and entrypoint
 WORKDIR /app/

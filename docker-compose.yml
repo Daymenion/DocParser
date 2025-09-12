@@ -1,19 +1,24 @@
-version: '3.8'
+version: "3.9"
 
 services:
-  docparser:
-    build: .
+  ocr-app:
+    build:
+      context: .                # Dockerfile'ın bulunduğu dizin
+      dockerfile: Dockerfile
+    container_name: doc-parser-app
     ports:
-      - "7860:7860"
-      - "6010:6010"
-    restart: on-failure
+      - "7860:7860"              # Gradio UI
+      - "6010:6010"              # VLM server
+    runtime: nvidia              # GPU erişimi
     deploy:
+      restart_policy:
+        condition: on-failure 
       resources:
         reservations:
           devices:
-            - driver: nvidia
+            - capabilities: [gpu]
               count: all
-              capabilities: [gpu]
+              driver: nvidia
     environment:
       - CUDA_VISIBLE_DEVICES=1
-    shm_size: 16gb
+    
