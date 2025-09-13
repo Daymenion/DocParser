@@ -35,11 +35,9 @@ RUN pip install --no-cache-dir -e .
 RUN pip install --no-cache-dir flash-attn --no-build-isolation
 
 # Install FlashInfer for CUDA 12.6 + torch 2.6
-RUN pip install --no-cache-dir \
-    https://flashinfer.ai/whl/cu126/torch2.6/flashinfer-python/flashinfer_python-0.2.5+cu126torch2.6-cp38-abi3-linux_x86_64.whl
-
+RUN pip install flashinfer-python
 # Set working directory and entrypoint
 WORKDIR /app/
 RUN adduser --disabled-password --gecos '' --shell /bin/bash appuser
 USER appuser
-ENTRYPOINT ["/app/.venv/bin/python", "-m", "docext.app.app", "--model_name", "hosted_vllm/nanonets/Nanonets-OCR-s", "--no-share", "--vlm_server_port", "6010", "--concurrency_limit", "16", "--ui_port", "7860"]
+ENTRYPOINT ["/app/.venv/bin/python", "-m", "docext.app.app", "--model_name", "hosted_vllm/nanonets/Nanonets-OCR-s", "--no-share", "--vlm_server_port", "6010", "--concurrency_limit", "16", "--server_port", "7860"]

@@ -35,7 +35,7 @@ def parse_args():
     parser.add_argument(
         "--max_model_len",
         type=int,
-        default=17500,
+        default=15000,
         help="Maximum length of the model. Use small values for low memory devices.",
     )
     parser.add_argument(
@@ -89,7 +89,7 @@ def parse_args():
     parser.add_argument(
         "--max_gen_tokens",
         type=int,
-        default=12500,
+        default=12000,
         help="Maximum number of tokens to generate for the model.",
     )
     return parser.parse_args()
